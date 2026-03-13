@@ -1,0 +1,22 @@
+{
+  "name": "harness-gemini",
+  "version": "1.0.0",
+  "description": "Harness the power of Gemini CLI",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "tsx src/orchestrator.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@google/gemini-cli-sdk": "file:gemini-cli/packages/sdk"
+  }
+}
