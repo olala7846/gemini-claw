@@ -26,6 +26,13 @@ Because the `@google/gemini-cli-sdk` is not publicly published to NPM, this proj
    npm install
    ```
 
+*(Optional)* If you also want to make the `gemini` CLI command available globally in your terminal, you can install it from source by creating a symlink. Run the following inside the `gemini-cli` directory:
+
+```bash
+cd ../gemini-cli
+sudo npm link
+```
+
 ## Ideas
 
 ### Phase 1 (Control Gemini CLI)
