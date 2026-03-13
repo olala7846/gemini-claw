@@ -18,6 +18,9 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@google/gemini-cli-sdk": "file:gemini-cli/packages/sdk"
+    "@google/gemini-cli-sdk": "file:gemini-cli/packages/sdk",
+    "ajv": "^8.18.0",
+    "//zod": "Pinned strictly to match gemini-cli version to prevent SDK instanceof ZodType prototype chain errors",
+    "zod": "3.25.76"
   }
 }

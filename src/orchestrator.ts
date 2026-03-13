@@ -16,8 +16,8 @@ async function main() {
   let fullResponse = '';
   // @ts-ignore
   for await (const event of stream) {
-    if (event.type === 'content' || event.type === 'text' || event.type === 'text_delta') {
-      const text = event.value || event.text;
+    if (event.type === 'content') {
+      const text = event.value;
       if (text) {
         process.stdout.write(text);
         fullResponse += text;

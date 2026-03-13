@@ -42,6 +42,11 @@ async function main() {
       case 'tool_call':
         process.stdout.write(`\n\n[Agent invoked tool: ${msg.toolName}]\n`);
         break;
+      case 'status_update':
+        console.log(`\n\n[STATUS: ${msg.state}] Reason: ${msg.reason}`);
+        expectingResponse = false;
+        rl.prompt();
+        break;
       case 'error':
         console.error(`\n[Agent Error]: ${msg.content}\n`);
         expectingResponse = false;
