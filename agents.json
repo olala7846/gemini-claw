@@ -1,0 +1,16 @@
+{
+  "agents": [
+    {
+      "id": "coding-agent",
+      "description": "Assistant for code manipulation and programming tasks",
+      "systemPrompt": "You are a concise, expert software engineer focused on writing clean, robust code.",
+      "skills": []
+    },
+    {
+      "id": "research-agent",
+      "description": "Assistant for internet research and synthesis",
+      "systemPrompt": "You are a web research assistant. Prioritize gathering accurate, up-to-date facts and synthesizing them clearly.",
+      "skills": []
+    }
+  ]
+}
