@@ -6,6 +6,9 @@ import { ReportStatusTool } from './statusTool.js';
 
 type WorkerState = 'INITIALIZED' | 'RUNNING' | 'PAUSED' | 'STOPPED';
 
+/** Prefix injected into the conversation history when resuming a paused task. */
+const RESUME_PREFIX = '[User Resumed Task]:';
+
 export class AgentWorker {
   private agent: GeminiCliAgent;
   private session: GeminiCliSession | null = null;
@@ -49,22 +52,19 @@ export class AgentWorker {
   }
 
   private async handleResume(content: string) {
-    console.log(`\n\n[Worker Debug] Received resume_task payload: "${content}"`);
-    console.log(`[Worker Debug] Current state: ${this.state}`);
-    
     if (this.state !== 'PAUSED') {
       publishOutbound({ type: 'error', content: 'Cannot resume a task that is not currently PAUSED.' });
       return;
     }
-    
+
     this.state = 'RUNNING';
-    await this.handlePrompt(`[User Resumed Task]: ${content}`);
+    await this.handlePrompt(`${RESUME_PREFIX} ${content}`);
   }
 
   private async handlePrompt(prompt: string) {
     if (!this.session || this.state !== 'RUNNING') {
-        console.log(`[Worker Debug] Ignoring prompt. session exists: ${!!this.session}, state: ${this.state}`);
-        return;
+      // TODO: publish a user-visible error when a prompt is dropped while PAUSED
+      return;
     }
 
     try {
@@ -118,10 +118,10 @@ export class AgentWorker {
     } catch (err: any) {
       if (err.name === 'AbortError' || err.message === 'AGENT_PAUSED_INTENTIONALLY' || err.message === 'AGENT_STOPPED_INTENTIONALLY') {
         // We intentionally aborted the stream to pause/stop the agent contextually.
-        console.log('[Worker Debug] Stream cleanly aborted by system.');
         return;
       }
       this.state = 'STOPPED';
+      // TODO: call session.close() here once the SDK exposes a teardown API
       publishOutbound({ type: 'error', content: err.message || 'Unknown error occurred' });
     }
   }

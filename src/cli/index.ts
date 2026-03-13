@@ -3,7 +3,8 @@ import { getAgentConfig } from '../agent/registry.js';
 import { AgentWorker } from '../agent/worker.js';
 import { publishInbound, subscribeOutbound } from '../protocol/bus.js';
 
-// Intercept globally escaping AbortErrors from node-fetch dropping stream connections
+// Intercept globally escaping AbortErrors from node-fetch dropping stream connections.
+// TODO: remove this handler once the SDK catches AbortErrors internally at the stream level.
 process.on('uncaughtException', (err: any) => {
   if (err.name === 'AbortError' || err.type === 'aborted') {
     return; // Safely ignore, this happens when we purposefully abort the agent session stream
@@ -47,9 +48,11 @@ async function main() {
   // Setup CLI Interface
   let expectingResponse = false;
   let isPaused = false;
+  let rlClosed = false;
   let rl = createRL();
 
   function createRL() {
+    rlClosed = false;
     const newRl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -87,15 +90,14 @@ async function main() {
     });
 
     newRl.on('close', () => {
-      console.log('\nReadline stream closed temporarily by system.');
+      rlClosed = true;
     });
 
     return newRl;
   }
 
   function ensureRl() {
-    // @ts-ignore - internal property check to see if closed
-    if (rl.closed || rl['closed']) {
+    if (rlClosed) {
       rl = createRL();
     }
   }
