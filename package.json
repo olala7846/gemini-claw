@@ -1,5 +1,5 @@
 {
-  "name": "harness-gemini",
+  "name": "gemini-manager",
   "version": "1.0.0",
   "description": "Harness the power of Gemini CLI",
   "main": "index.js",

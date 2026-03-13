@@ -22,7 +22,7 @@ Because the `@google/gemini-cli-sdk` is not publicly published to NPM, this proj
    ```
 3. Return to this repository and install the local packages:
    ```bash
-   cd ../harness-gemini
+   cd ../gemini-manager
    npm install
    ```
 
