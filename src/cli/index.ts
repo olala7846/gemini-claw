@@ -3,6 +3,15 @@ import { getAgentConfig } from '../agent/registry.js';
 import { AgentWorker } from '../agent/worker.js';
 import { publishInbound, subscribeOutbound } from '../protocol/bus.js';
 
+// Intercept globally escaping AbortErrors from node-fetch dropping stream connections
+process.on('uncaughtException', (err: any) => {
+  if (err.name === 'AbortError' || err.type === 'aborted') {
+    return; // Safely ignore, this happens when we purposefully abort the agent session stream
+  }
+  console.error('Fatal CLI Error:', err);
+  process.exit(1);
+});
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.length === 0) {
@@ -14,25 +23,82 @@ async function main() {
   let cwd = process.cwd();
   let initialPrompt = '';
 
-  for (let i = 1; i < args.length; i++) {
-    if (args[i] === '--cwd' && args[i + 1]) {
-      cwd = args[++i] as string;
-    } else if (args[i] === '--prompt' && args[i + 1]) {
-      initialPrompt = args[++i] as string;
+  let i = 1;
+  while (i < args.length) {
+    if (args[i] === '--cwd' && typeof args[i + 1] === 'string') {
+      cwd = args[i + 1] as string;
+      i += 2;
+    } else if (args[i] === '--prompt' && typeof args[i + 1] === 'string') {
+      initialPrompt = args[i + 1] as string;
+      i += 2;
+    } else {
+      i++;
     }
+  }
+
+  if (!agentId) {
+    console.error('Usage: chat-with-agent-cli <agent-id> [--cwd ./path] [--prompt "Initial text"]');
+    process.exit(1);
   }
 
   const config = getAgentConfig(agentId);
   const worker = new AgentWorker(config, cwd);
 
   // Setup CLI Interface
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: '\n> '
-  });
-
   let expectingResponse = false;
+  let isPaused = false;
+  let rl = createRL();
+
+  function createRL() {
+    const newRl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      prompt: '\n> '
+    });
+
+    newRl.on('line', (line) => {
+      if (expectingResponse) {
+        console.log('[Please wait, the agent is still typing...]');
+        return;
+      }
+
+      const input = line.trim();
+      if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
+        newRl.close();
+        process.exit(0);
+      }
+
+      if (input) {
+        expectingResponse = true;
+        if (isPaused) {
+          isPaused = false;
+          publishInbound({ type: 'resume_task', content: input });
+        } else {
+          publishInbound({ type: 'prompt', content: input });
+        }
+      } else {
+        try { newRl.prompt(); } catch (e) {}
+      }
+    });
+
+    newRl.on('error', (err: any) => {
+      if (err.name === 'AbortError' || err.type === 'aborted') return;
+      console.error('\n[Readline Error]:', err);
+    });
+
+    newRl.on('close', () => {
+      console.log('\nReadline stream closed temporarily by system.');
+    });
+
+    return newRl;
+  }
+
+  function ensureRl() {
+    // @ts-ignore - internal property check to see if closed
+    if (rl.closed || rl['closed']) {
+      rl = createRL();
+    }
+  }
 
   subscribeOutbound((msg) => {
     switch (msg.type) {
@@ -42,20 +108,38 @@ async function main() {
       case 'tool_call':
         process.stdout.write(`\n\n[Agent invoked tool: ${msg.toolName}]\n`);
         break;
-      case 'status_update':
-        console.log(`\n\n[STATUS: ${msg.state}] Reason: ${msg.reason}`);
+      case 'input_needed':
+        console.log(`\n\n[PAUSED: INPUT NEEDED] Reason: ${msg.reason}`);
         expectingResponse = false;
-        rl.prompt();
+        isPaused = true;
+        ensureRl();
+        try { rl.prompt(); } catch (e) {}
+        break;
+      case 'task_completed':
+        console.log(`\n\n[COMPLETED] ${msg.reason}`);
+        expectingResponse = false;
+        ensureRl();
+        try { rl.prompt(); } catch (e) {}
+        break;
+      case 'task_failed':
+        console.log(`\n\n[FAILED] Reason: ${msg.reason}`);
+        expectingResponse = false;
+        ensureRl();
+        try { rl.prompt(); } catch (e) {}
         break;
       case 'error':
         console.error(`\n[Agent Error]: ${msg.content}\n`);
         expectingResponse = false;
-        rl.prompt();
+        ensureRl();
+        try { rl.prompt(); } catch (e) {}
         break;
       case 'done':
-        console.log('\n'); // Add breathing room after stream finishes
-        expectingResponse = false;
-        rl.prompt();
+        if (!isPaused) {
+          console.log('\n'); // Add breathing room after stream finishes
+          expectingResponse = false;
+          ensureRl();
+          try { rl.prompt(); } catch (e) {}
+        }
         break;
     }
   });
@@ -63,37 +147,13 @@ async function main() {
   // Start Agent Worker
   await worker.start();
 
-  rl.on('line', (line) => {
-    if (expectingResponse) {
-      console.log('[Please wait, the agent is still typing...]');
-      return;
-    }
-
-    const input = line.trim();
-    if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
-      rl.close();
-      return;
-    }
-
-    if (input) {
-      expectingResponse = true;
-      publishInbound({ type: 'prompt', content: input });
-    } else {
-      rl.prompt();
-    }
-  });
-
-  rl.on('close', () => {
-    console.log('Chat session ended.');
-    process.exit(0);
-  });
-
   // Handle Initial Prompt if provided
   if (initialPrompt) {
     expectingResponse = true;
     publishInbound({ type: 'prompt', content: initialPrompt });
   } else {
-    rl.prompt();
+    ensureRl();
+    try { rl.prompt(); } catch (e) {}
   }
 }
 
