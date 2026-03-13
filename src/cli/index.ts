@@ -16,9 +16,9 @@ async function main() {
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--cwd' && args[i + 1]) {
-      cwd = args[++i];
+      cwd = args[++i] as string;
     } else if (args[i] === '--prompt' && args[i + 1]) {
-      initialPrompt = args[++i];
+      initialPrompt = args[++i] as string;
     }
   }
 
@@ -68,7 +68,7 @@ async function main() {
       console.log('[Please wait, the agent is still typing...]');
       return;
     }
-    
+
     const input = line.trim();
     if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
       rl.close();

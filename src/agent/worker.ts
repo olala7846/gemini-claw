@@ -20,9 +20,8 @@ export class AgentWorker {
     this.agent = new GeminiCliAgent({
       cwd: this.cwd,
       instructions: augmentedPrompt,
-      model: this.config.models?.primary,
-      skills: this.config.skills?.map(s => ({ type: 'dir', path: s })),
-      // Inject our internal status reporting tool
+      ...(this.config.models?.primary ? { model: this.config.models.primary } : {}),
+      ...(this.config.skills ? { skills: this.config.skills.map((s) => ({ type: 'dir' as const, path: s })) } : {}),
       tools: [ReportStatusTool]
     });
   }
@@ -45,10 +44,10 @@ export class AgentWorker {
 
   private async handlePrompt(prompt: string) {
     if (!this.session) return;
-    
+
     try {
       const stream = this.session.sendStream(prompt);
-      
+
       // @ts-ignore - Types from generic interface
       for await (const event of stream) {
         if (event.type === 'content') {
@@ -71,8 +70,8 @@ export class AgentWorker {
             return;
           }
 
-          publishOutbound({ 
-            type: 'tool_call', 
+          publishOutbound({
+            type: 'tool_call',
             toolName,
             toolArgs
           });
@@ -84,4 +83,3 @@ export class AgentWorker {
     }
   }
 }
-

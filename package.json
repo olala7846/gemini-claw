@@ -1,5 +1,5 @@
 {
-  "name": "harness-gemini",
+  "name": "gemini-manager",
   "version": "1.0.0",
   "description": "Harness the power of Gemini CLI",
   "main": "index.js",
@@ -24,7 +24,7 @@
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^25.5.0",
+    "@types/node": "^22.19.15",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -36,7 +36,7 @@
     "typescript-eslint": "^8.57.0"
   },
   "dependencies": {
-    "@google/gemini-cli-sdk": "file:gemini-cli/packages/sdk",
+    "@google/gemini-cli-sdk": "file:../gemini-cli/packages/sdk",
     "ajv": "^8.18.0",
     "zod": "3.25.76"
   }
