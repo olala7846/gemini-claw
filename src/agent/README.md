@@ -71,7 +71,7 @@ sequenceDiagram
     Worker->>Worker: state = 'PAUSED'
     Worker->>Bus: publishOutbound({ type: 'input_needed', reason })
     Worker->>Worker: throw Error('AGENT_PAUSED_INTENTIONALLY')
-    Note right of Worker: breaks the for-await loop cleanly;<br/>GeminiCliSession stays alive in memory
+    Note right of Worker: breaks the for-await loop; GeminiCliSession stays alive
 
     Bus-->>CLI: input_needed message
     CLI->>CLI: isPaused = true, show prompt
@@ -81,7 +81,7 @@ sequenceDiagram
     Bus->>Worker: handleResume(content)
     Worker->>Worker: state = 'RUNNING'
     Worker->>Session: sendStream('[User Resumed Task]: ' + content)
-    Note right of Session: SDK sees this as a new turn<br/>in the same conversation history
+    Note right of Session: SDK sees this as a new turn in the same conversation history
 
     loop Resumed stream events
         LLM-->>Session: content / tool_call_request
