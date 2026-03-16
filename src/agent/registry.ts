@@ -19,7 +19,7 @@ export function loadRegistry(configPath = path.join(process.cwd(), 'agents.json'
     throw new Error(`Agent configuration file not found at: ${configPath}`);
   }
   const rawData = fs.readFileSync(configPath, 'utf-8');
-  const parsed = JSON.parse(rawData) as { agents: AgentConfig[], prompts?: Record<string, string> };
+  const parsed = JSON.parse(rawData) as { agents: AgentConfig[]; prompts?: Record<string, string> };
 
   loadedAgents = {};
   for (const agent of parsed.agents) {

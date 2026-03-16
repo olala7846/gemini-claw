@@ -56,7 +56,7 @@ async function main() {
   let expectingResponse = false;
   let isPaused = false;
   let rl: readline.Interface | null = null;
-  
+
   if (!isHeadless) {
     rl = createRL();
   }
@@ -89,7 +89,11 @@ async function main() {
           publishInbound({ type: 'prompt', content: input });
         }
       } else {
-        try { newRl.prompt(); } catch (e) {}
+        try {
+          rl?.prompt();
+        } catch (_e) {
+          /* ignore */
+        }
       }
     });
 
@@ -113,7 +117,11 @@ async function main() {
     expectingResponse = false;
     if (isHeadless) return;
     ensureRl();
-    try { rl?.prompt(); } catch (e) {}
+    try {
+      rl?.prompt();
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   subscribeOutbound((msg) => {
@@ -162,7 +170,11 @@ async function main() {
     publishInbound({ type: 'prompt', content: initialPrompt });
   } else {
     ensureRl();
-    try { rl?.prompt(); } catch (e) {}
+    try {
+      rl?.prompt();
+    } catch (_e) {
+      /* ignore */
+    }
   }
 }
 

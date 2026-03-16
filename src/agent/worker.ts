@@ -94,20 +94,26 @@ export class AgentWorker {
             const reason = toolArgs?.reason as string;
 
             const systemAck = await ReportStatusTool.action({ state, reason });
-            publishOutbound({ type: 'content', content: `\n[System Internal: ${systemAck}]\n`});
+            publishOutbound({ type: 'content', content: `\n[System Internal: ${systemAck}]\n` });
 
             if (state === 'INPUT_NEEDED') {
               if (this.mode === 'headless') {
                 this.consecutiveInputNeeded++;
                 if (this.consecutiveInputNeeded >= 3) {
                   this.state = 'STOPPED';
-                  publishOutbound({ type: 'task_failed', reason: 'Max YOLO attempts exceeded: Agent repeatedly asked for input in headless mode' });
+                  publishOutbound({
+                    type: 'task_failed',
+                    reason: 'Max YOLO attempts exceeded: Agent repeatedly asked for input in headless mode'
+                  });
                   throw new Error('AGENT_STOPPED_INTENTIONALLY');
                 }
                 // Instead of pausing, we force a resume
                 setTimeout(() => {
-                  publishOutbound({ type: 'content', content: `\n[Headless Auto-Reply Injection]\n`});
-                  publishInbound({ type: 'resume_task', content: `[Headless Auto-Reply]: I am a scheduled job and cannot provide clarification. Please make your best guess, skip the problematic step if necessary, and proceed to complete the task as best as you can.` });
+                  publishOutbound({ type: 'content', content: `\n[Headless Auto-Reply Injection]\n` });
+                  publishInbound({
+                    type: 'resume_task',
+                    content: `[Headless Auto-Reply]: I am a scheduled job and cannot provide clarification. Please make your best guess, skip the problematic step if necessary, and proceed to complete the task as best as you can.`
+                  });
                 }, 10);
                 this.state = 'PAUSED';
                 throw new Error('AGENT_PAUSED_INTENTIONALLY');
@@ -137,7 +143,7 @@ export class AgentWorker {
           });
         }
       }
-      
+
       // If the stream naturally finishes without the agent explicitly calling the status tool:
       if (this.state === 'RUNNING') {
         if (this.mode === 'headless') {
@@ -148,7 +154,10 @@ export class AgentWorker {
             publishOutbound({ type: 'task_failed', reason: 'Max YOLO attempts exceeded during silent halting' });
           } else {
             setTimeout(() => {
-               publishInbound({ type: 'prompt', content: `[Headless Auto-Reply]: You finished your response but forgot to call report_status. Please call the report_status tool to officially complete or fail the task.` });
+              publishInbound({
+                type: 'prompt',
+                content: `[Headless Auto-Reply]: You finished your response but forgot to call report_status. Please call the report_status tool to officially complete or fail the task.`
+              });
             }, 10);
           }
         } else {
@@ -163,11 +172,10 @@ export class AgentWorker {
       this.state = 'STOPPED';
       if (err.name === 'AbortError' || err.type === 'aborted') {
         if (this.mode === 'headless') {
-           publishOutbound({ type: 'task_failed', reason: 'Unintentional AbortError during headless execution' });
+          publishOutbound({ type: 'task_failed', reason: 'Unintentional AbortError during headless execution' });
         }
         return;
       }
-      // TODO: call session.close() here once the SDK exposes a teardown API
       publishOutbound({ type: 'error', content: err.message || 'Unknown error occurred' });
     }
   }
