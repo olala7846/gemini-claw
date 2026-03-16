@@ -17,7 +17,7 @@ vi.mock('@google/gemini-cli-sdk', () => {
 });
 
 // Import AFTER mocking so the mock is in place
-const { AgentWorker } = await import('./worker.js');
+const { AgentWorker, MAX_HEADLESS_ATTEMPTS } = await import('./worker.js');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -267,7 +267,7 @@ describe('AgentWorker — unit tests', () => {
   });
 
   // ── 11. YOLO Mode: Max Attempts Exceeded on consecutive INPUT_NEEDED ───────
-  it('headless YOLO mode: max attempts exceeded on 3x INPUT_NEEDED', async () => {
+  it(`headless YOLO mode: max attempts exceeded on ${MAX_HEADLESS_ATTEMPTS}x INPUT_NEEDED`, async () => {
     agentBus.removeAllListeners();
     worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless');
     await worker.start();

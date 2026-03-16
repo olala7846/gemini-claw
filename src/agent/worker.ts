@@ -10,6 +10,14 @@ type WorkerMode = 'interactive' | 'headless';
 /** Prefix injected into the conversation history when resuming a paused task. */
 const RESUME_PREFIX = '[User Resumed Task]:';
 
+export const MAX_HEADLESS_ATTEMPTS = 3;
+export const HEADLESS_REPLY_DELAY_MS = 10;
+export const HEADLESS_AUTO_REPLY_PROMPT = `[Headless Auto-Reply]: I am a scheduled job and cannot provide clarification. Please make your best guess, skip the problematic step if necessary, and proceed to complete the task as best as you can.`;
+export const YOLO_ATTEMPTS_EXCEEDED_REASON =
+  'Max YOLO attempts exceeded: Agent repeatedly asked for input in headless mode';
+export const SILENT_HALTING_NUDGE_PROMPT = `[Headless Auto-Reply]: You finished your response but forgot to call report_status. Please call the report_status tool to officially complete or fail the task.`;
+export const SILENT_HALTING_EXCEEDED_REASON = 'Max YOLO attempts exceeded during silent halting';
+
 export class AgentWorker {
   private agent: GeminiCliAgent;
   private session: GeminiCliSession | null = null;
@@ -99,11 +107,11 @@ export class AgentWorker {
             if (state === 'INPUT_NEEDED') {
               if (this.mode === 'headless') {
                 this.consecutiveInputNeeded++;
-                if (this.consecutiveInputNeeded >= 3) {
+                if (this.consecutiveInputNeeded >= MAX_HEADLESS_ATTEMPTS) {
                   this.state = 'STOPPED';
                   publishOutbound({
                     type: 'task_failed',
-                    reason: 'Max YOLO attempts exceeded: Agent repeatedly asked for input in headless mode'
+                    reason: YOLO_ATTEMPTS_EXCEEDED_REASON
                   });
                   throw new Error('AGENT_STOPPED_INTENTIONALLY');
                 }
@@ -112,9 +120,9 @@ export class AgentWorker {
                   publishOutbound({ type: 'content', content: `\n[Headless Auto-Reply Injection]\n` });
                   publishInbound({
                     type: 'resume_task',
-                    content: `[Headless Auto-Reply]: I am a scheduled job and cannot provide clarification. Please make your best guess, skip the problematic step if necessary, and proceed to complete the task as best as you can.`
+                    content: HEADLESS_AUTO_REPLY_PROMPT
                   });
-                }, 10);
+                }, HEADLESS_REPLY_DELAY_MS);
                 this.state = 'PAUSED';
                 throw new Error('AGENT_PAUSED_INTENTIONALLY');
               } else {
@@ -149,16 +157,16 @@ export class AgentWorker {
         if (this.mode === 'headless') {
           // Silent halting mitigation: force a nudge to report status
           this.consecutiveInputNeeded++;
-          if (this.consecutiveInputNeeded >= 3) {
+          if (this.consecutiveInputNeeded >= MAX_HEADLESS_ATTEMPTS) {
             this.state = 'STOPPED';
-            publishOutbound({ type: 'task_failed', reason: 'Max YOLO attempts exceeded during silent halting' });
+            publishOutbound({ type: 'task_failed', reason: SILENT_HALTING_EXCEEDED_REASON });
           } else {
             setTimeout(() => {
               publishInbound({
                 type: 'prompt',
-                content: `[Headless Auto-Reply]: You finished your response but forgot to call report_status. Please call the report_status tool to officially complete or fail the task.`
+                content: SILENT_HALTING_NUDGE_PROMPT
               });
-            }, 10);
+            }, HEADLESS_REPLY_DELAY_MS);
           }
         } else {
           publishOutbound({ type: 'done' });
