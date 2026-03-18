@@ -5,7 +5,7 @@ describe('Protocol Bus', () => {
   it('publishInbound triggers subscribeInbound handlers', () => {
     const received: any[] = [];
     agentBus.once(Topic.INBOUND, (msg) => received.push(msg));
-    publishInbound({ type: 'prompt', content: 'hello' });
+    publishInbound({ meta: { sessionId: 'test', channel: 'automation' }, type: 'prompt', content: 'hello' });
     expect(received).toHaveLength(1);
     expect(received[0]).toEqual({ type: 'prompt', content: 'hello' });
   });
@@ -13,7 +13,7 @@ describe('Protocol Bus', () => {
   it('publishOutbound triggers subscribeOutbound handlers', () => {
     const received: any[] = [];
     agentBus.once(Topic.OUTBOUND, (msg) => received.push(msg));
-    publishOutbound({ type: 'done' });
+    publishOutbound({ meta: { sessionId: 'test', channel: 'automation' }, type: 'done' });
     expect(received).toHaveLength(1);
     expect(received[0]).toEqual({ type: 'done' });
   });
@@ -22,7 +22,7 @@ describe('Protocol Bus', () => {
     const results: string[] = [];
     agentBus.once(Topic.OUTBOUND, () => results.push('subscriber-1'));
     agentBus.once(Topic.OUTBOUND, () => results.push('subscriber-2'));
-    publishOutbound({ type: 'done' });
+    publishOutbound({ meta: { sessionId: 'test', channel: 'automation' }, type: 'done' });
     expect(results).toContain('subscriber-1');
     expect(results).toContain('subscriber-2');
   });

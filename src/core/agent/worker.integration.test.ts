@@ -80,7 +80,11 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
   it('full pause → resume cycle: INPUT_NEEDED then COMPLETED', async () => {
     // ── Step 1: Trigger first turn ──────────────────────────────────────────
     const inputNeededPromise = waitForMessage('input_needed');
-    publishInbound({ type: 'prompt', content: 'begin test' });
+    publishInbound({
+      meta: { sessionId: 'test-session', channel: 'automation' },
+      type: 'prompt',
+      content: 'begin test'
+    });
 
     const inputNeededMsg = await inputNeededPromise;
     expect(inputNeededMsg.type).toBe('input_needed');
@@ -88,7 +92,11 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
 
     // ── Step 2: Resume ──────────────────────────────────────────────────────
     const completedPromise = waitForMessage('task_completed');
-    publishInbound({ type: 'resume_task', content: 'continue' });
+    publishInbound({
+      meta: { sessionId: 'test-session', channel: 'automation' },
+      type: 'resume_task',
+      content: 'continue'
+    });
 
     const completedMsg = await completedPromise;
     expect(completedMsg.type).toBe('task_completed');
@@ -98,7 +106,11 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
   it('prompt while PAUSED is ignored — no new content emitted', async () => {
     // ── Pause the agent ─────────────────────────────────────────────────────
     const inputNeededPromise = waitForMessage('input_needed');
-    publishInbound({ type: 'prompt', content: 'begin test' });
+    publishInbound({
+      meta: { sessionId: 'test-session', channel: 'automation' },
+      type: 'prompt',
+      content: 'begin test'
+    });
     await inputNeededPromise;
 
     // ── Send a plain prompt (should be silently dropped) ────────────────────
@@ -110,7 +122,11 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
     };
     agentBus.on('agent.outbound', collector);
 
-    publishInbound({ type: 'prompt', content: 'this should be ignored' });
+    publishInbound({
+      meta: { sessionId: 'test-session', channel: 'automation' },
+      type: 'prompt',
+      content: 'this should be ignored'
+    });
 
     // Wait briefly to give any erroneous processing a chance to surface
     await new Promise((r) => setTimeout(r, 3_000));

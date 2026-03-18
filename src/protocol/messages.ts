@@ -23,7 +23,7 @@ export type InboundMessage = { meta: MessageMeta } & (
  */
 export type OutboundMessage = { meta: MessageMeta } & (
   | { type: 'content'; content: string }
-  | { type: 'tool_call'; toolName: string; toolArgs?: any }
+  | { type: 'tool_call'; toolName: string; toolArgs?: Record<string, unknown> }
   | { type: 'input_needed'; reason: string }
   | { type: 'task_completed'; reason: string }
   | { type: 'task_failed'; reason: string }
