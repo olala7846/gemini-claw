@@ -96,7 +96,7 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
     publishInbound({
       meta: { sessionId: 'test-session', channel: 'automation' },
       type: 'resume_task',
-      content: 'continue'
+      content: 'I confirm. Call report_status with COMPLETED and reason=test-resume-confirmed.'
     });
 
     const completedMsg = await completedPromise;
