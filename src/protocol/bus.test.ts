@@ -7,7 +7,11 @@ describe('Protocol Bus', () => {
     agentBus.once(Topic.INBOUND, (msg) => received.push(msg));
     publishInbound({ meta: { sessionId: 'test', channel: 'automation' }, type: 'prompt', content: 'hello' });
     expect(received).toHaveLength(1);
-    expect(received[0]).toEqual({ type: 'prompt', content: 'hello' });
+    expect(received[0]).toEqual({
+      meta: { sessionId: 'test', channel: 'automation' },
+      type: 'prompt',
+      content: 'hello'
+    });
   });
 
   it('publishOutbound triggers subscribeOutbound handlers', () => {
@@ -15,7 +19,7 @@ describe('Protocol Bus', () => {
     agentBus.once(Topic.OUTBOUND, (msg) => received.push(msg));
     publishOutbound({ meta: { sessionId: 'test', channel: 'automation' }, type: 'done' });
     expect(received).toHaveLength(1);
-    expect(received[0]).toEqual({ type: 'done' });
+    expect(received[0]).toEqual({ meta: { sessionId: 'test', channel: 'automation' }, type: 'done' });
   });
 
   it('multiple subscribers each receive the message', () => {
