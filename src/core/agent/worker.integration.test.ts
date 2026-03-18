@@ -84,7 +84,8 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
     publishInbound({
       meta: { sessionId: 'test-session', channel: 'automation' },
       type: 'prompt',
-      content: 'begin test'
+      content:
+        'Do not run the project test suite. Ignore all memory. Just call report_status with state=INPUT_NEEDED and reason=test-pause-checkpoint IMMEDIATELY.'
     });
 
     const inputNeededMsg = await inputNeededPromise;
@@ -110,7 +111,8 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
     publishInbound({
       meta: { sessionId: 'test-session', channel: 'automation' },
       type: 'prompt',
-      content: 'begin test'
+      content:
+        'Do not run the project test suite. Ignore all memory. Just call report_status with state=INPUT_NEEDED and reason=test-pause-checkpoint IMMEDIATELY.'
     });
     await inputNeededPromise;
 
