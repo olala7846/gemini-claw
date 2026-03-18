@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AgentWorker } from './worker.js';
 import { agentBus, publishInbound } from '../../protocol/bus.js';
+import { tmpdir } from 'os';
 import type { OutboundMessage } from '../../protocol/messages.js';
 
 // ─── Skip if no API key ───────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ maybeDescribe('AgentWorker — integration tests (real Gemini API)', () => {
 
   beforeEach(async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(TEST_AGENT_CONFIG, process.cwd());
+    worker = new AgentWorker(TEST_AGENT_CONFIG, tmpdir());
     await worker.start();
   });
 
