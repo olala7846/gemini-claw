@@ -1,9 +1,13 @@
-# Gemini Manager
+# GeminiClaw
 
-Harness the power of Gemini CLI (existing Google subscription) by leveraging the geminicli
+GeminiClaw is a specialized personal agent powered by the Gemini CLI. It acts as the core engine for a Claw-like personal assistant, equipped with persistent memory, robust session management, and intelligent agent routing.
 
-## Goal / Vision
-Fill the gap of what Google don't build (Remote Control, Dashboard, Workflow) for Gemini CLI
+## High-Level Concept
+
+- **Core Engine**: Leverages the Gemini CLI as the underlying intelligence for the assistant.
+- **Memory System**: Implements persistent memory using specialized pipelines (`AGENTS.md`, `MEMORY.md`, and `HISTORY.md`).
+- **Session Management**: Builds upon existing Gemini CLI sessions, adding the ability to retrieve, resume, and learn from past interactions.
+- **Agent Gateway**: An intelligent router that directs messages to specific specialized agents based on user configuration.
 
 ## Installation
 
@@ -35,33 +39,13 @@ sudo npm link
 
 ## Usage
 
-Once the local SDK is built and dependencies are installed, you can trigger the custom wrapper CLI.
+*(Usage instructions to be updated as the new GeminiClaw architecture evolves.)*
 
-### Interactive Mode
-To start an interactive chat session with the background Agent Worker:
-```bash
-npm run start:cli <agent> -- [--prompt "Optional initial prompt"]
-```
+## Roadmap & Progress Tracking
 
-### Headless Scheduling (YOLO Mode)
-If you want to run an agent as a background task (e.g. via `cron`), you can use the `--headless` flag. In this mode, the agent is forced to use its best judgment and skip asking clarifying questions. The process will naturally exit `0` on completion or `1` on failure.
+To see the comprehensive future plans and milestones for this project, please view the [Roadmap](docs/ROADMAP.md).
 
-You can combine this with predefined prompts configured in `agents.json`:
+### Proof of Concept (PoC) Tracker
+The ongoing progress of the GeminiClaw Phase 1 PoC is strictly tracked in [`docs/poc-plan.json`](docs/poc-plan.json). 
 
-1. Define a prompt in `agents.json`:
-```json
-{
-  "prompts": {
-    "my_task": "Analyze the codebase and write a summary..."
-  }
-}
-```
-
-2. Run it headlessly:
-```bash
-npm run start:cli coding-agent -- --prompt-name my_task --headless
-```
-
-## Roadmap
-
-To see the completed phases and future plans for this project, please view the [Roadmap](docs/ROADMAP.md).
+**Agent Contract:** This JSON file acts as the single source of truth for the structural contract across all workstreams. **Any agent executing work in this repository MUST update the status and progress in `poc-plan.json` matching the relevant task.**
