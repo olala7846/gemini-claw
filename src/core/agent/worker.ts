@@ -28,6 +28,7 @@ export class AgentWorker {
   private state: WorkerState = 'INITIALIZED';
   private consecutiveInputNeeded = 0;
   private currentMeta: MessageMeta | null = null;
+  private sessionId: string;
 
   private publishOut(msg: any) {
     publishOutbound({
@@ -43,10 +44,11 @@ export class AgentWorker {
     } as InboundMessage);
   }
 
-  constructor(config: AgentConfig, cwd: string, mode: WorkerMode = 'interactive') {
+  constructor(config: AgentConfig, cwd: string, mode: WorkerMode = 'interactive', sessionId: string = 'default') {
     this.config = config;
     this.cwd = cwd;
     this.mode = mode;
+    this.sessionId = sessionId;
 
     // We append a strict instruction to always use the tool
     let augmentedPrompt = `${this.config.systemPrompt}\n\nCRITICAL SYSTEM INSTRUCTION: When you have finished your task, or if you are permanently blocked, you MUST call the \`report_status\` tool. Do not just print "blocked" or "completed" in text—you must invoke the tool with the appropriate state and reason.`;
@@ -70,6 +72,7 @@ export class AgentWorker {
 
     // Listen to Pub/Sub events from the CLI
     subscribeInbound(async (msg) => {
+      if (msg.meta.sessionId !== this.sessionId) return;
       this.currentMeta = msg.meta;
       if (msg.type === 'prompt') {
         await this.handlePrompt(msg.content);
