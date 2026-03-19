@@ -20,9 +20,19 @@ vi.mock('bullmq', () => {
 });
 
 describe('Automation Scheduler', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let processorFn: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
     agentBus.removeAllListeners();
+    processorFn = undefined;
+
+    vi.mocked(Worker).mockImplementation(function (_name, processor) {
+      processorFn = processor;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { on: vi.fn() } as any;
+    });
   });
 
   it('scheduleTask calls Queue.add', async () => {
@@ -31,15 +41,6 @@ describe('Automation Scheduler', () => {
   });
 
   it('Worker processes jobs by emitting to bus and resolving on success', async () => {
-    // Extract the processor function from the mocked constructor
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let processorFn: any;
-    vi.mocked(Worker).mockImplementation(function (_name, processor) {
-      processorFn = processor;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { on: vi.fn() } as any;
-    });
-
     startTaskWorker();
     expect(processorFn).toBeDefined();
 
@@ -65,14 +66,6 @@ describe('Automation Scheduler', () => {
   });
 
   it('Worker rejects job on agent error over outbound bus', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let processorFn: any;
-    vi.mocked(Worker).mockImplementation(function (_name, processor) {
-      processorFn = processor;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { on: vi.fn() } as any;
-    });
-
     startTaskWorker();
 
     const jobPromise = processorFn({ id: '999', data: { personaId: 'agent', prompt: 'do fail' } });

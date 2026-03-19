@@ -5,6 +5,7 @@ import type { AgentConfig } from './registry.js';
 import type { GeminiCliSession } from '@google/gemini-cli-sdk';
 import { ReportStatusTool } from './statusTool.js';
 import type { SessionStore, MemStore } from '../persistence/interfaces.js';
+import { hydrateSessionHistory, extractSessionHistory } from './sdkWorkaround.js';
 
 type WorkerState = 'INITIALIZED' | 'RUNNING' | 'PAUSED' | 'STOPPED';
 type WorkerMode = 'interactive' | 'headless';
@@ -103,13 +104,7 @@ export class AgentWorker {
         const history = await this.sessionStore.getHistory(this.sessionId);
         if (history && history.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const client = (this.session as any).client;
-          if (client && client.resumeChat) {
-            await client.resumeChat(history, {
-              conversation: { sessionId: this.sessionId, messages: [] },
-              filePath: ''
-            });
-          }
+          await hydrateSessionHistory(this.session, history as any, this.sessionId);
         }
       } catch (err) {
         console.error('Failed to hydrate session history', err);
@@ -258,10 +253,10 @@ export class AgentWorker {
       }
     } finally {
       if (this.sessionStore) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const client = (this.session as any).client;
-        if (client && client.getHistory) {
-          await this.sessionStore.save(this.sessionId, client.getHistory()).catch((err) => {
+        const history = extractSessionHistory(this.session);
+        if (history.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await this.sessionStore.save(this.sessionId, history as any).catch((err) => {
             console.error('Failed to save session history', err);
           });
         }

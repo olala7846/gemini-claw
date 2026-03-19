@@ -27,7 +27,7 @@ export function startTaskWorker() {
     async (job: Job<AgentTaskPayload>) => {
       const sessionId = `job-${job.id || randomUUID()}`;
 
-      return new Promise<void>((resolve, reject) => {
+      const completionPromise = new Promise<void>((resolve, reject) => {
         // Listen for the agent's completion or failure
         const listener = (msg: OutboundMessage) => {
           if (msg.meta.sessionId !== sessionId) return;
@@ -43,23 +43,25 @@ export function startTaskWorker() {
         };
 
         agentBus.on(Topic.OUTBOUND, listener);
-
-        // Fire the session start event to the Gateway
-        // Gateway router intercepts this, realizes it's the `automation` channel,
-        // so it initializes an AgentWorker in `headless` mode.
-        publishInbound({
-          meta: { sessionId, channel: 'automation' },
-          type: 'session_start',
-          persona: job.data.personaId
-        });
-
-        // Fire the actual task prompt
-        publishInbound({
-          meta: { sessionId, channel: 'automation' },
-          type: 'prompt',
-          content: job.data.prompt
-        });
       });
+
+      // Fire the session start event to the Gateway
+      // Gateway router intercepts this, realizes it's the `automation` channel,
+      // so it initializes an AgentWorker in `headless` mode.
+      publishInbound({
+        meta: { sessionId, channel: 'automation' },
+        type: 'session_start',
+        persona: job.data.personaId
+      });
+
+      // Fire the actual task prompt
+      publishInbound({
+        meta: { sessionId, channel: 'automation' },
+        type: 'prompt',
+        content: job.data.prompt
+      });
+
+      await completionPromise;
     },
     { connection }
   );
