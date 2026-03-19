@@ -133,13 +133,19 @@ The automation trigger that acts as the "Cron/Queue".
 - [ ] **Gateway Layer (Resolves 1.2)**
   - [ ] Create `src/gateway/router.ts`.
   - [ ] Implement `GatewayRouter` logic to intercept `session_start`/`prompt` from the bus.
+  - [ ] Implement Persona resolution logic (mapping incoming metadata to specific `AgentConfig`).
   - [ ] Create unit tests for `router.ts`.
+- [ ] **Multi-Agent Context & Persistence (Resolves 1.3)**
+  - [ ] Create interface definition for external `SessionStore` (for chat history).
+  - [ ] Create interface definition for external `MemStore` (for long-term observations).
+  - [ ] Update `AgentWorker` initialization to hydrate conversation history from the `SessionStore`.
 - [ ] **Refactor Core Worker (Resolves 1.4)**
   - [ ] Modify `AgentWorker` to accept `sessionId` and selectively filter bus events.
   - [ ] Update `worker.test.ts` to reflect the new `sessionId` requirement.
 - [ ] **Automation Layer (Resolves 1.1)**
+  - [ ] Define standard task payload schema for automation triggers.
   - [ ] Create `src/automation/scheduler.ts` stub/trigger to fire automation events.
   - [ ] Create unit tests for `scheduler.ts`.
-- [ ] **Wiring it all together (Resolves 1.3 & connects the flow)**
+- [ ] **Wiring it all together (Connects the flow)**
   - [ ] Update `src/bin/cli.ts` to boot the `GatewayRouter` instead of `AgentWorker` directly.
   - [ ] Verify manual end-to-end local CLI functionality.
