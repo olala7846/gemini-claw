@@ -13,14 +13,9 @@ jobs:
       - name: Checkout GeminiClaw (Manager)
         uses: actions/checkout@v4
         with:
+          submodules: true
           path: gemini-manager
-
-      - name: Checkout Gemini CLI SDK (Dependency)
-        uses: actions/checkout@v4
-        with:
-          repository: google-gemini/gemini-cli
-          path: gemini-cli
-          # NOTE: If google-gemini/gemini-cli is a private repository, you will need to uncomment 
+          # NOTE: If the reference/gemini-cli submodule is a private repository, you will need to uncomment 
           # the 'token' line below and provide a GitHub PAT via Repository Secrets.
           # token: ${{ secrets.GH_PAT_SDK_ACCESS }}
 
@@ -30,7 +25,7 @@ jobs:
           node-version: '20.x'
 
       - name: Bootstrap gemini-cli SDK
-        working-directory: gemini-cli
+        working-directory: gemini-manager/reference/gemini-cli
         run: |
           npm install
           npm run build
