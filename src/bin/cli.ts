@@ -5,7 +5,7 @@ import { GatewayRouter } from '../gateway/router.js';
 
 // Intercept globally escaping AbortErrors from node-fetch dropping stream connections.
 // TODO: remove this handler once the SDK catches AbortErrors internally at the stream level.
-process.on('uncaughtException', (err: any) => {
+process.on('uncaughtException', (err: Error & { type?: string }) => {
   if (err.name === 'AbortError' || err.type === 'aborted') {
     return; // Safely ignore, this happens when we purposefully abort the agent session stream
   }

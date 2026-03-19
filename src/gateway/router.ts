@@ -44,11 +44,12 @@ export class GatewayRouter {
           await this.workerRequestHandler({ sessionId, personaId, mode });
           this.activeSessions.add(sessionId);
           // Silent logging internally to not disrupt CLI too much
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
           publishOutbound({
             meta: msg.meta,
             type: 'error',
-            content: `[Gateway Error] Failed to start agent worker: ${err.message}`
+            content: `[Gateway Error] Failed to start agent worker: ${errorMessage}`
           });
           return;
         }

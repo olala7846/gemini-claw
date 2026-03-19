@@ -30,6 +30,7 @@ export class AgentWorker {
   private currentMeta: MessageMeta | null = null;
   private sessionId: string;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private publishOut(msg: any) {
     publishOutbound({
       meta: this.currentMeta || { sessionId: 'system', channel: 'automation' as const },
@@ -37,6 +38,7 @@ export class AgentWorker {
     } as OutboundMessage);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private publishIn(msg: any) {
     publishInbound({
       meta: this.currentMeta || { sessionId: 'system', channel: 'automation' as const },
@@ -106,7 +108,6 @@ export class AgentWorker {
     try {
       const stream = this.session.sendStream(prompt);
 
-      // @ts-ignore - Types from generic interface
       for await (const event of stream) {
         if (event.type === 'content') {
           const text = event.value;
@@ -192,19 +193,25 @@ export class AgentWorker {
           this.publishOut({ type: 'done' });
         }
       }
-    } catch (err: any) {
-      if (err.message === 'AGENT_PAUSED_INTENTIONALLY' || err.message === 'AGENT_STOPPED_INTENTIONALLY') {
-        // We intentionally aborted the stream to pause/stop the agent contextually.
-        return;
-      }
-      this.state = 'STOPPED';
-      if (err.name === 'AbortError' || err.type === 'aborted') {
-        if (this.mode === 'headless') {
-          this.publishOut({ type: 'task_failed', reason: 'Unintentional AbortError during headless execution' });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.message === 'AGENT_PAUSED_INTENTIONALLY' || err.message === 'AGENT_STOPPED_INTENTIONALLY') {
+          // We intentionally aborted the stream to pause/stop the agent contextually.
+          return;
         }
-        return;
+        this.state = 'STOPPED';
+        const e = err as Error & { type?: string };
+        if (e.name === 'AbortError' || e.type === 'aborted') {
+          if (this.mode === 'headless') {
+            this.publishOut({ type: 'task_failed', reason: 'Unintentional AbortError during headless execution' });
+          }
+          return;
+        }
+        this.publishOut({ type: 'error', content: err.message || 'Unknown error occurred' });
+      } else {
+        this.state = 'STOPPED';
+        this.publishOut({ type: 'error', content: 'Unknown error occurred' });
       }
-      this.publishOut({ type: 'error', content: err.message || 'Unknown error occurred' });
     }
   }
 }

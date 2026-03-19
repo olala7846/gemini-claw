@@ -4,10 +4,10 @@ import type { OutboundMessage } from '../../protocol/messages.js';
 
 // ─── Mock the SDK before importing AgentWorker ────────────────────────────────
 // GeminiCliAgent is used with `new`, so the mock must be a real constructor.
-let mockSendStream: () => AsyncGenerator<any>;
+let mockSendStream: () => AsyncGenerator<unknown>;
 
 vi.mock('@google/gemini-cli-sdk', () => {
-  const GeminiCliAgent = vi.fn(function (this: any) {
+  const GeminiCliAgent = vi.fn(function (this: { session: () => unknown }) {
     this.session = () => ({
       initialize: vi.fn().mockResolvedValue(undefined),
       sendStream: () => mockSendStream()
@@ -21,7 +21,7 @@ const { AgentWorker, MAX_HEADLESS_ATTEMPTS } = await import('./worker.js');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function* makeStream(events: any[]): AsyncGenerator<any> {
+async function* makeStream(events: unknown[]): AsyncGenerator<unknown> {
   for (const evt of events) yield evt;
 }
 
