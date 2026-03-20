@@ -80,8 +80,9 @@ export function startTaskWorker() {
 /**
  * Utility function to dispatch an automation background task payload into the queue.
  */
-export async function scheduleTask(payload: AgentTaskPayload) {
+export async function scheduleTask(payload: AgentTaskPayload, delayMs?: number) {
   return taskQueue.add('agent-task', payload, {
+    ...(delayMs !== undefined ? { delay: delayMs } : {}),
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000 }
   });
