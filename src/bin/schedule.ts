@@ -3,7 +3,7 @@ import { taskQueue } from '../automation/scheduler.js';
 
 async function main() {
   const args = process.argv.slice(2);
-  let personaId = 'coding-agent';
+  let personaId = 'default';
   let prompt = 'Say hello validation run!';
   let delayMs: number | undefined = undefined;
 
