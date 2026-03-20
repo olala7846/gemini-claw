@@ -39,6 +39,8 @@ export function startTaskWorker() {
             agentBus.off(Topic.OUTBOUND, listener);
             const reason = msg.type === 'task_failed' ? msg.reason : msg.content;
             reject(new Error(`Agent task failed: ${reason}`));
+          } else if (msg.type === 'content') {
+            console.log(`[Agent] ${msg.content}`);
           }
         };
 
