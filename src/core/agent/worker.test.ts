@@ -19,6 +19,12 @@ vi.mock('@google/gemini-cli-sdk', () => {
 // Import AFTER mocking so the mock is in place
 const { AgentWorker, MAX_HEADLESS_ATTEMPTS } = await import('./worker.js');
 
+// ─── Mock the new workaround module ───────────────────────────────────────────
+vi.mock('./sdkWorkaround.js', () => ({
+  hydrateSessionHistory: vi.fn(),
+  extractSessionHistory: vi.fn().mockReturnValue([{ type: 'user', content: [{ text: 'mocked' }] }])
+}));
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function* makeStream(events: unknown[]): AsyncGenerator<unknown> {
@@ -51,10 +57,15 @@ async function collectOutbound(fn: () => Promise<void>): Promise<OutboundMessage
 
 describe('AgentWorker — unit tests', () => {
   let worker: InstanceType<typeof AgentWorker>;
+  let mockSessionStore: { save: ReturnType<typeof vi.fn>; getHistory: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(AGENT_CONFIG, '/tmp');
+    mockSessionStore = {
+      save: vi.fn().mockResolvedValue(undefined),
+      getHistory: vi.fn().mockResolvedValue([])
+    };
+    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'interactive', 'default', mockSessionStore as any);
     await worker.start();
   });
 
@@ -77,6 +88,9 @@ describe('AgentWorker — unit tests', () => {
     const content = msgs.filter((m) => m.type === 'content');
     expect(content).toHaveLength(2);
     expect(msgs.some((m) => m.type === 'done')).toBe(true);
+
+    // Save should be called naturally at the end of interactive prompt
+    expect(mockSessionStore.save).toHaveBeenCalled();
   });
 
   // ── 2. INPUT_NEEDED → PAUSED ───────────────────────────────────────────────
@@ -100,6 +114,9 @@ describe('AgentWorker — unit tests', () => {
     const inputNeeded = msgs.find((m) => m.type === 'input_needed');
     expect(inputNeeded).toBeDefined();
     expect(inputNeeded).toHaveProperty('reason', 'need filename');
+
+    // State becomes PAUSED, should trigger a save
+    expect(mockSessionStore.save).toHaveBeenCalled();
   });
 
   // ── 3. Prompt ignored while PAUSED ─────────────────────────────────────────
@@ -262,7 +279,7 @@ describe('AgentWorker — unit tests', () => {
   // ── 10. YOLO Mode: INPUT_NEEDED is auto-replied ────────────────────────────
   it('headless YOLO mode: INPUT_NEEDED auto-resumes rather than pausing', async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless');
+    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless', 'default', mockSessionStore as any);
     await worker.start();
 
     mockSendStream = () =>
@@ -297,7 +314,7 @@ describe('AgentWorker — unit tests', () => {
   // ── 11. YOLO Mode: Max Attempts Exceeded on consecutive INPUT_NEEDED ───────
   it(`headless YOLO mode: max attempts exceeded on ${MAX_HEADLESS_ATTEMPTS}x INPUT_NEEDED`, async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless');
+    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless', 'default', mockSessionStore as any);
     await worker.start();
 
     mockSendStream = () =>
@@ -341,7 +358,7 @@ describe('AgentWorker — unit tests', () => {
   // ── 12. YOLO Mode: Silent Halting triggers nudge ───────────────────────────
   it('headless YOLO mode: naturally ending without status triggers nudge', async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless');
+    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless', 'default', mockSessionStore as any);
     await worker.start();
 
     mockSendStream = () => makeStream([{ type: 'content', value: 'im done' }]);
@@ -362,7 +379,7 @@ describe('AgentWorker — unit tests', () => {
   // ── 13. YOLO Mode: Unintentional AbortError ────────────────────────────────
   it('headless YOLO mode: AbortError emits task_failed', async () => {
     agentBus.removeAllListeners();
-    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless');
+    worker = new AgentWorker(AGENT_CONFIG, '/tmp', 'headless', 'default', mockSessionStore as any);
     await worker.start();
 
     mockSendStream = async function* () {

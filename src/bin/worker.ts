@@ -2,6 +2,7 @@ import { GatewayRouter } from '../gateway/router.js';
 import { AgentWorker } from '../core/agent/worker.js';
 import { getAgentConfig } from '../core/agent/registry.js';
 import { startTaskWorker } from '../automation/scheduler.js';
+import { JsonSessionStore } from '../core/persistence/jsonSessionStore.js';
 
 // Intercept globally escaping AbortErrors from node-fetch dropping stream connections.
 process.on('uncaughtException', (err: Error & { type?: string }) => {
@@ -16,13 +17,14 @@ async function main() {
   console.log('Starting GeminiClaw Background Worker...');
 
   const cwd = process.cwd();
+  const sessionStore = new JsonSessionStore();
 
   // 1. Boot up the Gateway Router to intercept background payloads
   const gateway = new GatewayRouter('background-runner', ['automation']);
   gateway.onWorkerRequested(async ({ sessionId, personaId, mode }) => {
     // Only headless mode is expected from automation
     const config = getAgentConfig(personaId);
-    const worker = new AgentWorker(config, cwd, mode, sessionId);
+    const worker = new AgentWorker(config, cwd, mode, sessionId, sessionStore);
     await worker.start();
   });
 

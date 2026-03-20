@@ -2,6 +2,7 @@ import { getAgentConfig, getPredefinedPrompt } from '../core/agent/registry.js';
 import { AgentWorker } from '../core/agent/worker.js';
 import { runCLI } from '../channels/cli/index.js';
 import { GatewayRouter } from '../gateway/router.js';
+import { JsonSessionStore } from '../core/persistence/jsonSessionStore.js';
 
 // Intercept globally escaping AbortErrors from node-fetch dropping stream connections.
 // TODO: remove this handler once the SDK catches AbortErrors internally at the stream level.
@@ -46,10 +47,11 @@ async function main() {
   }
 
   // 1. Boot up the Gateway Router
+  const sessionStore = new JsonSessionStore();
   const gateway = new GatewayRouter(agentId, ['cli', 'telegram']);
   gateway.onWorkerRequested(async ({ sessionId, personaId, mode }) => {
     const config = getAgentConfig(personaId);
-    const worker = new AgentWorker(config, cwd, mode, sessionId);
+    const worker = new AgentWorker(config, cwd, mode, sessionId, sessionStore);
     await worker.start();
   });
 

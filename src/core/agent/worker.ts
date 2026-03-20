@@ -128,6 +128,17 @@ export class AgentWorker {
     this.publishOut({ type: 'content', content: `[System] ${this.config.id} initialized in ${this.cwd}\n\n` });
   }
 
+  private async saveSessionState() {
+    if (this.sessionStore && this.session) {
+      try {
+        const history = extractSessionHistory(this.session);
+        await this.sessionStore.save(this.sessionId, history);
+      } catch (err) {
+        console.error('Failed to save session history', err);
+      }
+    }
+  }
+
   private async handleResume(content: string) {
     if (this.state !== 'PAUSED') {
       this.publishOut({ type: 'error', content: 'Cannot resume a task that is not currently PAUSED.' });
@@ -169,6 +180,7 @@ export class AgentWorker {
                 this.consecutiveInputNeeded++;
                 if (this.consecutiveInputNeeded >= MAX_HEADLESS_ATTEMPTS) {
                   this.state = 'STOPPED';
+                  await this.saveSessionState();
                   this.publishOut({
                     type: 'task_failed',
                     reason: YOLO_ATTEMPTS_EXCEEDED_REASON
@@ -184,18 +196,22 @@ export class AgentWorker {
                   });
                 }, HEADLESS_REPLY_DELAY_MS);
                 this.state = 'PAUSED';
+                await this.saveSessionState();
                 throw new Error('AGENT_PAUSED_INTENTIONALLY');
               } else {
                 this.state = 'PAUSED';
+                await this.saveSessionState();
                 this.publishOut({ type: 'input_needed', reason });
                 throw new Error('AGENT_PAUSED_INTENTIONALLY');
               }
             } else if (state === 'COMPLETED') {
               this.state = 'STOPPED';
+              await this.saveSessionState();
               this.publishOut({ type: 'task_completed', reason });
               throw new Error('AGENT_STOPPED_INTENTIONALLY');
             } else if (state === 'FAILED') {
               this.state = 'STOPPED';
+              await this.saveSessionState();
               this.publishOut({ type: 'task_failed', reason });
               throw new Error('AGENT_STOPPED_INTENTIONALLY');
             }
@@ -219,6 +235,7 @@ export class AgentWorker {
           this.consecutiveInputNeeded++;
           if (this.consecutiveInputNeeded >= MAX_HEADLESS_ATTEMPTS) {
             this.state = 'STOPPED';
+            await this.saveSessionState();
             this.publishOut({ type: 'task_failed', reason: SILENT_HALTING_EXCEEDED_REASON });
           } else {
             setTimeout(() => {
@@ -229,6 +246,9 @@ export class AgentWorker {
             }, HEADLESS_REPLY_DELAY_MS);
           }
         } else {
+          // Natural finish in interactive means we wait for next input
+          this.state = 'PAUSED';
+          await this.saveSessionState();
           this.publishOut({ type: 'done' });
         }
       }
@@ -239,6 +259,7 @@ export class AgentWorker {
           return;
         }
         this.state = 'STOPPED';
+        await this.saveSessionState();
         const e = err as Error & { type?: string };
         if (e.name === 'AbortError' || e.type === 'aborted') {
           if (this.mode === 'headless') {

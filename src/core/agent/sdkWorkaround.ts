@@ -1,7 +1,7 @@
 import type { GeminiCliSession } from '@google/gemini-cli-sdk';
 // We're importing the type only since it's used for typing the history records.
 // If the core types aren't available, we use any for simplicity in the bypass.
-import type { ConversationRecord } from '@google/gemini-cli-core';
+import type { Content } from '@google/gemini-cli-core';
 
 /**
  * 🚨 SDK WORKAROUND 🚨
@@ -27,7 +27,7 @@ function getInternalClient(session: GeminiCliSession): any {
 
 export async function hydrateSessionHistory(
   session: GeminiCliSession,
-  history: ConversationRecord[],
+  history: Content[],
   sessionId: string
 ): Promise<void> {
   const client = getInternalClient(session);
@@ -39,10 +39,10 @@ export async function hydrateSessionHistory(
   }
 }
 
-export function extractSessionHistory(session: GeminiCliSession): ConversationRecord[] {
+export function extractSessionHistory(session: GeminiCliSession): Content[] {
   const client = getInternalClient(session);
   if (client && client.getHistory) {
-    return client.getHistory() as ConversationRecord[];
+    return client.getHistory() as Content[];
   }
   return [];
 }
